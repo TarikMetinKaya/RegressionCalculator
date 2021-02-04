@@ -1,0 +1,364 @@
+/*
+This code was created by Timur the user of planetcalc.com online service.
+The code is distributed under Creative Commons Attribution/Share-Alike License 3.0 (Unported) (by-sa).
+Please provide a hyperlink to the original work https://planetcalc.com/5986/ from your website and keep the same license agreement for any derived work.
+*/
+function Calculate( xstring, ystring, dolinear, errors, doquadratic, dopower, docubic, doexponential, dologarithmic, dohyperbolic, doeexponential, linear, rxy, Rlinear, Alinear, quadratic, rquadratic, Rquadratic, Aquadratic, power, rpower, Rpower, Apower, cubic, rcubic, Rcubic, Acubic, exponential, rexponential, Rexponential, Aexponential, logarithmic, rlogarithmic, Rlogarithmic, Alogarithmic, hyperbolic, rhyperbolic, Rhyperbolic, Ahyperbolic, eexponential, reexponential, Reexponential, Aeexponential, result) {//https://ru.wikipedia.org/wiki/%D0%9C%D0%B5%D1%82%D0%BE%D0%B4_%D0%BD%D0%B0%D0%B8%D0%BC%D0%B5%D0%BD%D1%8C%D1%88%D0%B8%D1%85_%D0%BA%D0%B2%D0%B0%D0%B4%D1%80%D0%B0%D1%82%D0%BE%D0%B2
+//http://www.exponenta.ru/educat/systemat/gritsenko/glava1/theory3.asp
+//http://mathhelpplanet.com/static.php?p=onlayn-mnk-i-regressionniy-analiz
+//http://keisan.casio.com/exec/system/14059929550941
+//http://www.prenhall.com/esm/app/calculator/
+//http://keisan.casio.com/exec/system/14059930973581 - ab-exponential
+
+var xs = [];
+if (xstring.length) {
+    xs = xstring.split(' ');
+    xs = xs.map(function(x) {
+      return Number(x.replace(',','.'));
+    });
+}
+
+var ys = ystring.split(' ');
+ys = ys.map(function(y) {
+  return Number(y.replace(',','.'));
+});
+
+if (0 === xs.length) {
+    for(var i = 0; i < ys.length; ++i)
+        xs.push(i);
+}
+
+
+if (0 === ys.length)
+	throw { "source" : "ystring", "message" : errors[ "yempty" ] };
+
+if (ys.length != xs.length)
+	throw { "source" : "ystring", "message" : errors[ "nomatch" ] };
+
+var haszero = xs.some(function(n) { return n === 0; });
+if (haszero && dohyperbolic)
+	throw { "source" : "xstring", "message" : errors[ "nohyperzero" ] };
+
+//own sort with y
+var len = xs.length;
+for (var i = len-1; i>=0; i--){
+     for(var j = 1; j<=i; j++){
+       if(xs[j-1]>xs[j]){
+           var temp = xs[j-1];
+	   var tempy = ys[j-1];
+           xs[j-1] = xs[j];
+           ys[j-1] = ys[j];	   
+           xs[j] = temp;
+	   ys[j] = tempy;
+        }
+     }
+}
+
+/* experiment
+var xmax = xs[xs.length-1];
+var xnew = xmax;
+for(var i = 2; i <= 6; ++i) {
+	var xprev = xnew;
+	xnew = xnew * xmax;
+	alert( (xnew/xmax == xprev) + '\r\n' + xprev + '\r\n' + xnew);
+}
+*/
+
+var xmean = xs.reduce(function(sum, current) {
+  return sum + current;
+}, 0)/xs.length;
+
+var sx = xs.reduce(function(sum, current) {
+  return sum + current;
+}, 0);
+
+var sxx = xs.reduce(function(sum, current) {
+  return sum + current*current;
+}, 0);
+
+var sx3 = xs.reduce(function(sum, current) {
+  return sum + current*current*current;
+}, 0);
+
+var sx4 = xs.reduce(function(sum, current) {
+  return sum + Math.pow(current, 4);
+}, 0);
+
+var sx5 = xs.reduce(function(sum, current) {
+  return sum + Math.pow(current, 5);
+}, 0);
+
+var sx6 = xs.reduce(function(sum, current) {
+  return sum + Math.pow(current, 6);
+}, 0);
+
+var ymean = ys.reduce(function(sum, current) {
+  return sum + current;
+}, 0)/ys.length;
+
+var sy = ys.reduce(function(sum, current) {
+  return sum + current;
+}, 0);
+
+var syy = ys.reduce(function(sum, current) {
+  return sum + current*current;
+}, 0);
+
+var sxy = ys.reduce(function(sum, current, index) {
+  return sum + current*xs[index];
+}, 0);
+
+var sx2y = ys.reduce(function(sum, current, index) {
+  return sum + current*xs[index]*xs[index];
+}, 0);
+
+var sx2y = ys.reduce(function(sum, current, index) {
+  return sum + current*xs[index]*xs[index];
+}, 0);
+
+var sx3y = ys.reduce(function(sum, current, index) {
+  return sum + current*Math.pow(xs[index],3);
+}, 0);
+
+if (!haszero) {
+	var _x = xs.reduce(function(sum, current) {
+	  return sum + 1/current;
+	}, 0);
+
+	var _x2 = xs.reduce(function(sum, current) {
+	  return sum + 1/(current*current);
+	}, 0);
+
+	var y_x = ys.reduce(function(sum, current, i) {
+	  return sum + current/xs[i];
+	}, 0);
+}
+
+var n = xs.length;
+
+var lnx = xs.reduce(function(sum, current) {
+  return sum + Math.log(current);
+}, 0);
+
+var ln2x = xs.reduce(function(sum, current) {
+  return sum + Math.log(current)*Math.log(current);
+}, 0);
+
+var lny = ys.reduce(function(sum, current) {
+  return sum + Math.log(current);
+}, 0);
+
+var lnxlny = ys.reduce(function(sum, current, i) {
+  return sum + Math.log(current)*Math.log(xs[i]);
+}, 0);
+
+var xlny = ys.reduce(function(sum, current, i) {
+  return sum + Math.log(current)*xs[i];
+}, 0);
+
+var ylnx = ys.reduce(function(sum, current, i) {
+  return sum + Math.log(xs[i])*current;
+}, 0);
+
+var iPrecision = PCF.getCalcPrecision();
+iPrecision = iPrecision ? iPrecision : 4;
+
+function plusTerm(term) {
+    return (term >= 0 ? '+' : '-')  + Math.abs(term).toFixed(iPrecision);
+}
+
+//linear
+var a = (sx*sy - n*sxy)/(sx*sx - n*sxx);
+var b = (sx*sxy-sxx*sy)/(sx*sx - n*sxx); 
+
+linear.SetValue("y=" + a.toFixed(iPrecision) + "x" + plusTerm(b));
+
+//quadratic
+var solution = Planetcalc.Calculate1435( {
+	"matrixA": [ [sxx, sx, n, sy].join(' '), [sx3, sxx, sx, sxy].join(' '), [sx4, sx3, sxx, sx2y].join(' ') ].join("\r\n")
+} );
+
+var aq = Number(solution.matrixR[0][0]);
+var bq = Number(solution.matrixR[1][0]);
+var cq = Number(solution.matrixR[2][0]);
+
+quadratic.SetValue("y=" + aq.toFixed(iPrecision) + "x^2" + plusTerm(bq) + "x" + plusTerm(cq));
+
+//cubic
+solution = Planetcalc.Calculate1435( {
+	"matrixA": [ [sx3, sxx, sx, n, sy].join(' '), [sx4, sx3, sxx, sx, sxy].join(' '), [sx5, sx4, sx3, sxx, sx2y].join(' '), [sx6, sx5, sx4, sx3, sx3y].join(' ') ].join("\r\n")
+} );
+
+var ac = Number(solution.matrixR[0][0]);
+var bc = Number(solution.matrixR[1][0]);
+var cc = Number(solution.matrixR[2][0]);
+var dc = Number(solution.matrixR[3][0]);
+
+cubic.SetValue("y=" + ac.toFixed(iPrecision) + "x^3" + plusTerm(bc) + "x^2" + plusTerm(cc) + "x" + plusTerm(dc));
+
+//power
+var bp = (n*lnxlny - lnx*lny)/(n*ln2x - lnx*lnx);
+var ap = Math.exp( (lny-bp*lnx)/n );
+power.SetValue("y=" + ap.toFixed(iPrecision) + "x^{" + bp.toFixed(iPrecision) + "}");
+
+//exponential
+var be = Math.exp( (n*xlny-sx*lny)/(n*sxx-sx*sx));
+var ae = Math.exp( (lny-Math.log(be)*sx)/n );
+exponential.SetValue("y=" + ae.toFixed(iPrecision) + "\\cdot" + be.toFixed(iPrecision) + "^x");
+
+//logarithmic
+var bl = (n*ylnx - lnx*sy)/(n*ln2x-lnx*lnx);
+var al = (sy-bl*lnx)/n;
+logarithmic.SetValue("y=" + al.toFixed(iPrecision) + plusTerm(bl) + "\\cdot ln x");
+
+//hyperbolic
+if (!haszero) {
+	var bh = (n*y_x-_x*sy)/(n*_x2-_x*_x);
+	var ah = (sy-bh*_x)/n;
+	hyperbolic.SetValue("y=" + ah.toFixed(iPrecision) + (bh >= 0 ? "+" : "-") + "\\frac{" + Math.abs(bh).toFixed(iPrecision) + "}{x}");
+}
+
+//e-exponential
+var bee = (n*xlny - sx*lny)/(n*sxx-sx*sx);
+var aee = (lny-bee*sx)/n;
+eexponential.SetValue("y=e^{" + aee.toFixed(iPrecision) + plusTerm(bee) + "x}");
+
+var ylinear = [];
+var yquadratic = [];
+var ypower = [];
+var ycubic = [];
+var yexponential = [];
+var ylogarithmic = [];
+var yhyperbolic = [];
+var yeexponential = [];
+
+var beg = xs[0] - 0.1*(xs[xs.length-1] - xs[0]);
+var rbegin = result.AddNewRecord();
+rbegin.x = beg;
+rbegin.ylinear = a*beg+b;
+rbegin.yquadratic = aq*beg*beg + bq*beg + cq;
+rbegin.ypower = ap*Math.pow(beg, bp);
+rbegin.ycubic = ac*beg*beg*beg + bc*beg*beg + cc*beg+dc;
+rbegin.yexponential = ae*Math.pow(be,beg);
+rbegin.ylogarithmic = al+bl*Math.log(beg);
+if (!haszero) {
+	rbegin.yhyperbolic = ah + bh/beg;
+}
+rbegin.yeexponential = Math.exp(aee+bee*beg);
+
+for(var i=0; i < xs.length; ++i) {
+	var r = result.AddNewRecord();
+	r.i = i+1;
+	r.x = xs[i];
+	r.y = ys[i];
+	r.ylinear = a*xs[i]+b;
+	ylinear.push(r.ylinear);
+	r.yquadratic = aq*xs[i]*xs[i] + bq*xs[i] + cq;
+	yquadratic.push(r.yquadratic);
+	r.ypower = ap*Math.pow(xs[i], bp);
+	ypower.push(r.ypower);
+	r.ycubic = ac*xs[i]*xs[i]*xs[i] + bc*xs[i]*xs[i] + cc*xs[i]+dc;
+	ycubic.push(r.ycubic);
+	r.yexponential = ae*Math.pow(be,xs[i]);
+	yexponential.push(r.yexponential);
+	r.ylogarithmic = al+bl*Math.log(xs[i]);
+	ylogarithmic.push(r.ylogarithmic);
+	if (!haszero) {
+		r.yhyperbolic = ah + bh/xs[i];
+		yhyperbolic.push(r.yhyperbolic);
+	}
+	r.yeexponential = Math.exp(aee+bee*xs[i]);
+	yeexponential.push(r.yeexponential);
+}
+
+var end = xs[xs.length-1] + 0.1*(xs[xs.length-1] - xs[0]);
+var rend = result.AddNewRecord();
+rend.x = end;
+rend.ylinear = a*end+b;
+rend.yquadratic = aq*end*end + bq*end + cq;
+rend.ypower = ap*Math.pow(end, bp);
+rend.ycubic = ac*end*end*end + bc*end*end + cc*end+dc;
+rend.yexponential = ae*Math.pow(be,end);
+rend.ylogarithmic = al+bl*Math.log(end);
+if (!haszero) {
+	rend.yhyperbolic = ah + bh/end;
+}
+rend.yeexponential = Math.exp(aee+bee*end);
+
+//linear
+var trxy = (n*sxy-sx*sy)/Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy));
+rxy.SetValue(trxy);
+Rlinear.SetValue(trxy*trxy);
+
+var tA = ys.reduce(function(sum, current, i) {
+  return sum + Math.abs((current - ylinear[i])/current);
+}, 0)/ys.length;
+
+Alinear.SetValue(tA);
+
+function GetNonLinearCorrelation(arr1, arr2) {
+	var arr1mean = arr1.reduce(function(sum, current) {
+	  return sum + current;
+	}, 0)/arr1.length;
+	var sa1a2 = arr1.reduce(function(sum, current, i) {
+	  return sum + Math.pow(current - arr2[i],2);
+	}, 0);
+	var sa1mean = arr1.reduce(function(sum, current, i) {
+	  return sum + Math.pow(current - arr1mean,2);
+	}, 0);
+	var r = Math.sqrt(1 - sa1a2/sa1mean);
+	return r;
+}
+
+function GetApproximationError(arr1, arr2) {
+	var tA = arr1.reduce(function(sum, current, i) {
+  		return sum + Math.abs((current - arr2[i])/current);
+	}, 0)/arr1.length;
+	return tA;
+}
+
+//quadratic
+var tr = GetNonLinearCorrelation(ys, yquadratic);
+rquadratic.SetValue(tr);
+Rquadratic.SetValue(tr*tr);
+Aquadratic.SetValue(GetApproximationError(ys, yquadratic));
+
+//cubic
+tr = GetNonLinearCorrelation(ys, ycubic);
+rcubic.SetValue(tr);
+Rcubic.SetValue(tr*tr);
+Acubic.SetValue(GetApproximationError(ys, ycubic));
+
+//power
+tr = GetNonLinearCorrelation(ys, ypower);
+rpower.SetValue(tr);
+Rpower.SetValue(tr*tr);
+Apower.SetValue(GetApproximationError(ys, ypower));
+
+
+//exponential
+tr = GetNonLinearCorrelation(ys, yexponential);
+rexponential.SetValue(tr);
+Rexponential.SetValue(tr*tr);
+Aexponential.SetValue(GetApproximationError(ys, yexponential));
+
+//logarithmic
+tr = GetNonLinearCorrelation(ys, ylogarithmic);
+rlogarithmic.SetValue(tr);
+Rlogarithmic.SetValue(tr*tr);
+Alogarithmic.SetValue(GetApproximationError(ys, ylogarithmic));
+
+//hyperbolic
+if (!haszero) {
+	tr = GetNonLinearCorrelation(ys, yhyperbolic);
+	rhyperbolic.SetValue(tr);
+	Rhyperbolic.SetValue(tr*tr);
+	Ahyperbolic.SetValue(GetApproximationError(ys, yhyperbolic));
+}
+
+//e-exponential
+tr = GetNonLinearCorrelation(ys, yeexponential);
+reexponential.SetValue(tr);
+Reexponential.SetValue(tr*tr);
+Aeexponential.SetValue(GetApproximationError(ys, yeexponential));
+}
